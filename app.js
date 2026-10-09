@@ -246,12 +246,103 @@ class RunEngine {
 }
 
 /* ======================= Voice, sound, haptics ======================= */
+/* Coach voices: each one has its own lines and its own way of speaking */
+const VOICES = {
+  standard: {
+    name: 'Standard', desc: 'Plain and clear', rate: 1, pitch: 1, lang: 'en-US', pick: ['Samantha', 'Alex', 'Google US English'],
+    start: () => 'Go. Ghost is running.',
+    youPass: () => 'You passed the ghost.',
+    ghostPass: () => 'The ghost passed you.',
+    speedUp: (s) => `Speed up. Ghost is ${s} ahead.`,
+    speedUpBig: (s) => `Pick it up. The ghost is ${s} ahead.`,
+    easeOff: (s) => `Ease off. You're ${s} ahead of the ghost.`,
+    onPace: () => 'Right on pace. Hold it there.',
+    win: (t, s) => `Finished. ${t}. You beat the ghost by ${s}.`,
+    lose: (t, s) => `Finished. ${t}. The ghost won by ${s}.`,
+    pocket: () => 'Pocket mode. Press and hold the screen to unlock.',
+  },
+  yeshivish: {
+    name: 'Yeshivish guy yelling', desc: 'Loud, fast, full of chizuk', rate: 1.22, pitch: 1.35, lang: 'en-US', pick: ['Fred', 'Aaron', 'Tom', 'Alex', 'Google US English'],
+    start: () => 'NU! LET\'S GO! The ghost is already running, MAMASH!',
+    youPass: () => 'YOU PASSED THE GHOST! SHKOYACH! Ashreichem!',
+    ghostPass: () => 'OY! The ghost passed you! What are you, sleeping?! GO!',
+    speedUp: (s) => `FASTER! FASTER! The ghost is ${s} ahead! Come on, let's GO!`,
+    speedUpBig: (s) => `What's going on here?! The ghost is ${s} ahead! This is not a shiur, it's a RACE! MOVE!`,
+    easeOff: (s) => `Whoa whoa whoa, slow down! You're ${s} ahead! It's not a race to the kiddush!`,
+    onPace: () => 'SHKOYACH! Right on pace! Keep it RIGHT THERE!',
+    win: (t, s) => `FINISHED! ${t}! You beat the ghost by ${s}! MAZEL TOV! Gevaldig!`,
+    lose: (t, s) => `Finished. ${t}. The ghost won by ${s}. Next time, b'ezras Hashem, you'll get him!`,
+    pocket: () => 'Pocket mode! Put it away and RUN! Hold the screen to unlock.',
+    lap: (amt, u, t, rel) => `${amt} ${u}! ${t}! ${rel}`,
+    yell: true,
+  },
+  classy: {
+    name: 'Classy', desc: 'Calm, polished, refined', rate: 0.9, pitch: 0.95, lang: 'en-US', pick: ['Samantha', 'Allison', 'Ava', 'Susan', 'Google US English'],
+    start: () => 'Splendid. Your ghost is under way. Do enjoy the run.',
+    youPass: () => 'Very elegant. You have overtaken the ghost.',
+    ghostPass: () => 'Pardon me. The ghost has slipped ahead of you.',
+    speedUp: (s) => `If you would be so kind, pick up the pace. Your ghost leads by ${s}.`,
+    speedUpBig: (s) => `With the utmost respect, the ghost is ${s} ahead. A little more effort, please.`,
+    easeOff: (s) => `Do relax a touch. You lead the ghost by ${s}.`,
+    onPace: () => 'Exquisite. Precisely on pace.',
+    win: (t, s) => `Finished, in ${t}. A refined victory, by ${s}.`,
+    lose: (t, s) => `Finished, in ${t}. The ghost prevailed by ${s}. A fine effort nonetheless.`,
+    pocket: () => 'Pocket mode. Hold the screen, when you are ready, to unlock.',
+  },
+  british: {
+    name: 'British', desc: 'Proper English coach', rate: 1.02, pitch: 1, lang: 'en-GB', pick: ['Daniel', 'Arthur', 'Oliver', 'Kate', 'Serena', 'Google UK English Male', 'Google UK English Female'],
+    start: () => 'Right then, off you go! Ghost is away.',
+    youPass: () => "Brilliant! You've passed the ghost.",
+    ghostPass: () => "Blimey, the ghost's gone past you.",
+    speedUp: (s) => `Come on, pick it up! Ghost is ${s} ahead.`,
+    speedUpBig: (s) => `Oi, you're dawdling! Ghost is ${s} ahead. Get a move on!`,
+    easeOff: (s) => `Steady on, you're ${s} ahead of the ghost. Ease off a touch.`,
+    onPace: () => 'Spot on. Keep it right there.',
+    win: (t, s) => `Finished! ${t}. Smashing, you beat the ghost by ${s}!`,
+    lose: (t, s) => `Finished. ${t}. Ghost's had you by ${s}. Unlucky.`,
+    pocket: () => 'Pocket mode. Give the screen a long press to unlock.',
+  },
+  chasidish: {
+    name: 'Chasidish with a clogged nose', desc: 'Heimish, a bit stuffy', rate: 0.94, pitch: 0.82, lang: 'en-US', pick: ['Fred', 'Tom', 'Alex', 'Aaron', 'Google US English'],
+    start: () => 'Nu, gey shoin! The ghost is running.',
+    youPass: () => 'You passed the ghost. A michaye!',
+    ghostPass: () => 'Oy vey, the ghost passed you.',
+    speedUp: (s) => `Oy, geshvinder! The ghost is ${s} ahead!`,
+    speedUpBig: (s) => `Gevalt! The ghost is ${s} ahead! Shnell, shnell!`,
+    easeOff: (s) => `Pamelech, pamelech. You are ${s} ahead of the ghost.`,
+    onPace: () => 'Ah, shain! Right on pace.',
+    win: (t, s) => `Finished. ${t}. You beat the ghost by ${s}. A gezunt in dein keppele!`,
+    lose: (t, s) => `Finished. ${t}. The ghost won by ${s}. Zol zein mit mazel next time.`,
+    pocket: () => 'Pocket mode. Hold the screen to unlock it.',
+    nose: true,
+  },
+};
+// stuffy nose: m and n come out as b and d ("good morning" -> "good bordig")
+const noseify = (t) => t.replace(/[a-z]+/gi, (w) => w.replace(/ng\b/g, 'g').replace(/m/g, 'b').replace(/M/g, 'B').replace(/n/g, 'd').replace(/N/g, 'D'));
+const voice = () => VOICES[S.voiceStyle] || VOICES.standard;
+let voiceList = [];
+function loadVoices() { try { voiceList = speechSynthesis.getVoices() || []; } catch (e) { voiceList = []; } }
+if ('speechSynthesis' in window) { loadVoices(); try { speechSynthesis.onvoiceschanged = loadVoices; } catch (e) {} }
+function pickVoice(v) {
+  if (!voiceList.length) loadVoices();
+  const base = v.lang.slice(0, 2);
+  for (const n of v.pick) { const f = voiceList.find((x) => x.name.startsWith(n) && x.lang.replace('_', '-').startsWith(base)); if (f) return f; }
+  return voiceList.find((x) => x.lang.replace('_', '-') === v.lang) || voiceList.find((x) => x.lang.startsWith(base)) || null;
+}
+
 const Speaker = {
   enabled: true,
   unlock() { try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); } catch (e) {} },
-  say(text) {
-    if (!this.enabled || !('speechSynthesis' in window)) return;
-    try { const u = new SpeechSynthesisUtterance(text); u.rate = 1.0; speechSynthesis.speak(u); } catch (e) {}
+  say(text, force) {
+    if ((!this.enabled && !force) || !text || !('speechSynthesis' in window)) return;
+    const v = voice();
+    if (v.nose) text = noseify(text);
+    try {
+      const u = new SpeechSynthesisUtterance(text);
+      const vo = pickVoice(v); if (vo) u.voice = vo;
+      u.lang = vo ? vo.lang : v.lang; u.rate = v.rate; u.pitch = v.pitch; u.volume = 1;
+      speechSynthesis.speak(u);
+    } catch (e) {}
   },
   stop() { try { speechSynthesis.cancel(); } catch (e) {} },
 };
@@ -279,9 +370,13 @@ const buzz = (p) => { try { navigator.vibrate && navigator.vibrate(p); } catch (
 
 /* Keep the screen awake during a run */
 const Wake = {
-  lock: null,
+  lock: null, failed: false,
   async on() {
-    try { if ('wakeLock' in navigator) { this.lock = await navigator.wakeLock.request('screen'); } } catch (e) {}
+    try {
+      if (!('wakeLock' in navigator)) { this.failed = true; return; }
+      this.lock = await navigator.wakeLock.request('screen'); this.failed = false;
+      this.lock.addEventListener && this.lock.addEventListener('release', () => { this.lock = null; });
+    } catch (e) { this.failed = true; }
   },
   off() { try { this.lock && this.lock.release(); } catch (e) {} this.lock = null; },
 };
@@ -670,7 +765,7 @@ const presetM = [400, 800, MILE, 5000, 10000, 21097.5], presetN = ['400 m', '800
 const locMiles = /-(US|GB|LR)$/i.test(navigator.language || 'en-US');
 const S = {
   goalDist: Store.get('goalDist', 5000), goalTime: Store.get('goalTime', 1500), byPace: Store.get('byPace', false),
-  miles: Store.has('miles') ? Store.get('miles', true) : locMiles, voice: Store.get('voice', true),
+  miles: Store.has('miles') ? Store.get('miles', true) : locMiles, voice: Store.get('voice', true), coach: Store.get('coach', true), voiceStyle: Store.get('voiceStyle', 'standard'),
 };
 const save = () => { for (const k in S) Store.set(k, S[k]); };
 
@@ -780,8 +875,22 @@ const num = (id) => parseInt($(id).value, 10) || 0;
 /* ---------- Settings / confirm sheets ---------- */
 function openSettings() {
   const sh = $('setSheet'), m = $('togMiles'), v = $('togVoice');
-  const paint = () => { m.lastChild.classList.toggle('on', S.miles); v.lastChild.classList.toggle('on', S.voice); };
+  const k = $('togCoach');
+  const paint = () => { m.lastChild.classList.toggle('on', S.miles); v.lastChild.classList.toggle('on', S.voice); k.lastChild.classList.toggle('on', S.coach && S.voice); k.style.opacity = S.voice ? 1 : 0.4; };
   m.onclick = () => { S.miles = !S.miles; paint(); }; v.onclick = () => { S.voice = !S.voice; paint(); };
+  k.onclick = () => { if (S.voice) { S.coach = !S.coach; paint(); } };
+  const list = $('voiceList'); list.innerHTML = '';
+  Object.entries(VOICES).forEach(([id, v]) => {
+    const b = document.createElement('button'); b.className = 'vopt press' + (S.voiceStyle === id ? ' sel' : '');
+    b.innerHTML = `<span><b></b><small></small></span><span class="play">▶</span>`;
+    b.querySelector('b').textContent = v.name; b.querySelector('small').textContent = v.desc;
+    b.onclick = () => {
+      S.voiceStyle = id; [...list.children].forEach((c) => c.classList.toggle('sel', c === b));
+      unlockAudio(); try { speechSynthesis.cancel(); } catch (e) {}
+      Speaker.say(v.speedUp('8 seconds'), true);
+    };
+    list.appendChild(b);
+  });
   $('setDone').onclick = () => { sh.classList.remove('on'); save(); refresh(); };
   sh.onclick = (e) => { if (e.target === sh) $('setDone').onclick(); };
   paint(); sh.classList.add('on');
@@ -804,7 +913,8 @@ function startRun() {
   Speaker.unlock(); unlockAudio(); Wake.on();
   save();
   Speaker.enabled = S.voice;
-  Object.assign(R, { eng: new RunEngine(S.miles, S.goalDist, S.goalTime), begun: false, paused: false, finishing: false, saved: null, cameraOn: false, camNote: 'Starting camera…' });
+  Object.assign(Coach, { state: '', since: 0, said: false, lastSaid: -1e9, wasOff: false });
+  Object.assign(R, { eng: new RunEngine(S.miles, S.goalDist, S.goalTime), pocket: false, begun: false, paused: false, finishing: false, saved: null, cameraOn: false, camNote: 'Starting camera…' });
   Scene.dirReset = true;
   show('run');
   $('readyCard').style.display = ''; $('ctrl').style.display = 'none'; $('gapCard').style.display = 'none';
@@ -822,6 +932,7 @@ async function startCamera() {
   try {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('none');
     R.stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } });
+    if (R.pocket || !R.eng) { R.stream.getTracks().forEach((t) => t.stop()); R.stream = null; R.camWasOn = true; return; }
     const v = $('cam'); v.srcObject = R.stream; await v.play().catch(() => {});
     R.cameraOn = true; R.camNote = '';
   } catch (e) {
@@ -844,19 +955,85 @@ function engineLoop() {
   const e = R.eng; if (!e) return;
   e.tick(now());
   for (const ev of e.drain()) handleEvent(e, ev);
+  coach(e);
   if (e.finished && !R.saved) saveRun();
+}
+
+/* Pace coaching: tells you to speed up or ease off when you drift from the ghost */
+const Coach = { state: '', since: 0, said: false, lastSaid: -1e9, wasOff: false };
+function coach(e) {
+  if (!S.voice || !S.coach || !e.started || e.finished || e.paused || e.runTime < 20 || !e.gpsSeen) return;
+  const t = e.runTime, gs = e.gapSeconds();   // + means the ghost is ahead of you
+  const st = e.locked ? 'on' : gs > 3 ? 'behind' : gs < -3 ? 'ahead' : 'near';
+  if (st !== Coach.state) { Coach.state = st; Coach.since = t; Coach.said = false; }
+  const held = t - Coach.since;
+  if (t - Coach.lastSaid < 12) return;
+  try { if (speechSynthesis.speaking) return; } catch (x) {}
+  const secs = (v) => Fmt.spoken(Math.round(Math.abs(v)));
+  let msg = null;
+  if (st === 'behind' && ((!Coach.said && held >= 4) || (Coach.said && t - Coach.lastSaid >= 40))) {
+    msg = gs > 20 ? voice().speedUpBig(secs(gs)) : voice().speedUp(secs(gs));
+  } else if (st === 'ahead' && ((!Coach.said && held >= 4) || (Coach.said && t - Coach.lastSaid >= 40))) {
+    msg = voice().easeOff(secs(gs));
+  } else if (st === 'on' && !Coach.said && held >= 2 && Coach.wasOff) {
+    msg = voice().onPace();
+  }
+  if (st === 'behind' || st === 'ahead') Coach.wasOff = true;
+  if (msg) {
+    Speaker.say(msg); Coach.said = true; Coach.lastSaid = t;
+    if (st === 'on') Coach.wasOff = false;
+  }
+}
+
+/* Pocket mode: camera off, black screen that stays awake, touches locked */
+function enterPocket() {
+  if (!R.eng || R.pocket) return;
+  R.pocket = true; R.camWasOn = R.cameraOn;
+  stopCamera(); Wake.on();
+  $('pocket').classList.add('on');
+  Speaker.say(voice().pocket());
+  pocketUi();
+}
+function exitPocket() {
+  if (!R.pocket) return;
+  R.pocket = false; $('pocket').classList.remove('on');
+  if (R.camWasOn && R.eng) startCamera();
+}
+function pocketUi() {
+  const e = R.eng; if (!e || !R.pocket) return;
+  $('pkTime').textContent = Fmt.clock(e.runTime);
+  const g = e.gap(), gs = Math.round(Math.abs(e.gapSeconds()));
+  $('pkGap').textContent = e.finished ? 'FINISHED' : e.locked ? 'LOCKED IN' : Math.abs(g) <= 0.5 ? 'LEVEL WITH GHOST' : (g > 0 ? 'GHOST AHEAD ' : 'YOU AHEAD ') + gs + ' s';
+}
+function setupPocketHold() {
+  const el = $('pocket'), arc = $('pkArc'), FULL = 213.6, HOLD = 1500;
+  let start = 0, raf = 0;
+  const reset = () => { cancelAnimationFrame(raf); start = 0; arc.style.strokeDashoffset = FULL; };
+  const step = () => {
+    const k = Math.min(1, (performance.now() - start) / HOLD);
+    arc.style.strokeDashoffset = FULL * (1 - k);
+    if (k >= 1) { reset(); exitPocket(); return; }
+    raf = requestAnimationFrame(step);
+  };
+  const down = (ev) => { ev.preventDefault(); if (!start) { start = performance.now(); raf = requestAnimationFrame(step); } };
+  el.addEventListener('touchstart', down, { passive: false });
+  el.addEventListener('mousedown', down);
+  ['touchend', 'touchcancel', 'mouseup', 'mouseleave'].forEach((n) => el.addEventListener(n, reset));
+  el.addEventListener('touchmove', (ev) => ev.preventDefault(), { passive: false });
+  el.addEventListener('contextmenu', (ev) => ev.preventDefault());
 }
 function handleEvent(e, ev) {
   const unitWord = S.miles ? 'mile' : 'kilometer';
   switch (ev.type) {
-    case EV.START: Speaker.say('Go. Ghost is running.'); break;
-    case EV.YOU_PASS: Speaker.say('You passed the ghost.'); break;
-    case EV.GHOST_PASS: Speaker.say('The ghost passed you.'); break;
+    case EV.START: Speaker.say(voice().start()); break;
+    case EV.YOU_PASS: Speaker.say(voice().youPass()); break;
+    case EV.GHOST_PASS: Speaker.say(voice().ghostPass()); break;
     case EV.LOCK_ON: chime(); buzz([35, 45, 35]); R.lastPulse = Date.now(); break;
     case EV.LOCK_OFF: buzz(170); break;
     case EV.FINISH: {
       const d = ev.b, r = Math.round(Math.abs(d));
-      Speaker.say(`Finished. ${Fmt.spoken(ev.a)}. ${d > 0 ? 'You beat the ghost by ' : 'The ghost won by '}${r} seconds.`);
+      const rs = Fmt.spoken(r);
+      Speaker.say(d > 0 ? voice().win(Fmt.spoken(ev.a), rs) : voice().lose(Fmt.spoken(ev.a), rs));
       break;
     }
     case EV.LAP: {
@@ -864,7 +1041,9 @@ function handleEvent(e, ev) {
       if (Math.abs(g) < 1) rel = 'Level with the ghost.';
       else rel = g > 0 ? `${Math.round(g)} seconds behind the ghost.` : `${Math.round(-g)} seconds ahead of the ghost.`;
       const amt = +(ev.n * 0.25).toFixed(2);
-      Speaker.say(`${amt} ${unitWord}${amt === 1 ? '' : 's'}. ${Fmt.spoken(ev.b)}. ${rel}`);
+      const u = unitWord + (amt === 1 ? '' : 's'), v = voice();
+      if (v.yell) rel = rel.replace('behind the ghost.', 'behind the ghost! FASTER!').replace('ahead of the ghost.', 'ahead of the ghost! Shkoyach!');
+      Speaker.say(v.lap ? v.lap(amt, u, Fmt.spoken(ev.b), rel) : `${amt} ${u}. ${Fmt.spoken(ev.b)}. ${rel}`);
       break;
     }
   }
@@ -887,9 +1066,13 @@ function updateUi() {
     g.className = 'st ' + (gpsOk ? 'ok' : 'wait');
     if (R.cameraOn) { c.textContent = Motion.have ? '✓  Camera and motion ready' : '✓  Camera on (motion sensor off, ghost may float)'; c.className = 'st ' + (Motion.have ? 'ok' : 'wait'); }
     else { c.textContent = `–  ${R.camNote || 'Camera view off'}. Run works without the ghost overlay.`; c.className = 'st'; }
-    $('goBtn').disabled = !gpsOk;
+    $('goBtn').disabled = !gpsOk; $('goPocketBtn').disabled = !gpsOk;
+    const w = $('wakeRow');
+    if (Wake.failed) { w.style.display = ''; w.className = 'st wait'; w.textContent = '!  This phone may auto-lock mid-run. Set Settings > Display & Brightness > Auto-Lock to Never while you run.'; }
+    else w.style.display = 'none';
     return;
   }
+  if (R.pocket) pocketUi();
   const gap = e.gap();
   $('timeV').textContent = Fmt.clock(e.runTime);
   $('distV').textContent = Fmt.dist(e.dist, S.miles); $('distL').textContent = S.miles ? 'MILES' : 'KM';
@@ -928,9 +1111,10 @@ function teardown() {
   clearInterval(R.loopT); clearInterval(R.uiT); cancelAnimationFrame(R.raf);
   stopGps(); stopCamera(); Wake.off();
 }
-function cancelRun() { teardown(); Speaker.stop(); R.eng = null; show('home'); }
+function cancelRun() { R.pocket = false; $('pocket').classList.remove('on'); teardown(); Speaker.stop(); R.eng = null; show('home'); }
 function finishRun() {
   if (!R.eng) return;
+  if (R.pocket) { R.pocket = false; $('pocket').classList.remove('on'); }
   if (!R.saved && R.eng.started) saveRun();
   const j = R.saved; teardown(); R.eng = null;
   if (j) showSummary(j, true); else show('home');
@@ -995,6 +1179,9 @@ function boot() {
   buildHome();
   Scene.init();
   $('goBtn').onclick = begin;
+  $('goPocketBtn').onclick = () => { begin(); enterPocket(); };
+  $('pocketBtn').onclick = enterPocket;
+  setupPocketHold();
   $('cancelBtn').onclick = cancelRun;
   $('pauseBtn').onclick = togglePause;
   $('stopBtn').onclick = () => ask('End this run?', 'Your run so far will be saved.', 'Keep running', 'End run', finishRun);

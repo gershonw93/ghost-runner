@@ -134,6 +134,24 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .fields .unit{font-size:16px;font-weight:600;color:var(--sub);margin-left:6px}
 #typeSheet{align-items:flex-start;padding-top:calc(24px + var(--sat))}
 .err{color:#d94848;font-size:13px;text-align:center;min-height:18px;margin-top:6px}
+.vhd{font-size:12px;font-weight:700;color:var(--sub);letter-spacing:.06em;text-transform:uppercase;margin:16px 2px 8px}
+.vhd span{font-weight:500;text-transform:none;letter-spacing:0;margin-left:6px}
+#voiceList{display:flex;flex-direction:column;gap:6px}
+.vopt{display:flex;align-items:center;justify-content:space-between;width:100%;text-align:left;padding:10px 14px;border:1.5px solid var(--line);border-radius:14px;background:#fff}
+.vopt b{display:block;font-size:15px;font-weight:600}
+.vopt small{display:block;font-size:12px;color:var(--sub);margin-top:1px}
+.vopt .play{font-size:12px;color:var(--acc);width:28px;height:28px;border-radius:14px;background:var(--acc-soft);display:grid;place-items:center;flex:none}
+.vopt.sel{border-color:var(--acc);background:var(--acc-soft)}
+.vopt.sel .play{background:var(--acc);color:#fff}
+.sheet{max-height:calc(100vh - 24px);overflow-y:auto}
+#pocket{position:fixed;inset:0;background:#000;z-index:40;display:none;flex-direction:column;align-items:center;justify-content:space-between;padding:calc(80px + var(--sat)) 20px calc(40px + var(--sab));touch-action:none;-webkit-touch-callout:none}
+#pocket.on{display:flex}
+.pk-mid{text-align:center;margin-top:20vh}
+#pkTime{font-size:64px;font-weight:700;color:#2a2a2a;font-variant-numeric:tabular-nums}
+#pkGap{font-size:18px;font-weight:700;color:#2a2a2a;letter-spacing:.04em;margin-top:8px}
+.pk-foot{display:flex;flex-direction:column;align-items:center;gap:10px}
+.pk-hint{font-size:13px;color:#333}
+.ctrl{gap:22px!important}
 .install{font-size:13px;color:var(--sub);text-align:center;margin-top:12px;line-height:1.4}
 </style>
 </head>
@@ -184,6 +202,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
     <div id="gapCard"><div id="gapV"></div><div id="lockV"></div></div>
   </div>
   <div class="ctrl" id="ctrl">
+    <button id="pocketBtn" class="press" aria-label="Pocket mode"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14v8a7 7 0 0 1-14 0z"/><path d="M9 10l3 3 3-3"/></svg></button>
     <button id="pauseBtn" class="press" aria-label="Pause"></button>
     <button id="stopBtn" class="press" aria-label="End run"><svg width="26" height="26" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2.5" fill="#ff6b6b"/></svg></button>
   </div>
@@ -192,7 +211,9 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
     <div class="tip">Hold your phone up, camera facing the path ahead.</div>
     <div class="st" id="gpsRow"></div>
     <div class="st" id="camRow"></div>
+    <div class="st" id="wakeRow" style="display:none"></div>
     <button class="btn press" id="goBtn" disabled>Start</button>
+    <button class="btn soft press" id="goPocketBtn" disabled style="margin-top:8px">Start in pocket mode</button>
     <button class="btn line press" id="cancelBtn">Cancel</button>
   </div>
 </section>
@@ -214,6 +235,9 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   <h3>Settings</h3>
   <button class="tog" id="togMiles">Use miles<span class="sw"></span></button>
   <button class="tog" id="togVoice">Voice call-outs<span class="sw"></span></button>
+  <button class="tog" id="togCoach"><span style="text-align:left">Pace coaching<br><small class="sub" style="font-size:12px">Says "speed up" or "ease off" when you drift</small></span><span class="sw"></span></button>
+  <div class="vhd">Coach voice <span>tap to hear it</span></div>
+  <div id="voiceList"></div>
   <button class="btn press" id="setDone">Done</button>
 </div></div>
 
@@ -230,6 +254,15 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   <h3 id="askT"></h3><p id="askM"></p>
   <div class="two"><button class="btn line press" id="askNo"></button><button class="btn press" id="askYes"></button></div>
 </div></div>
+
+<!-- Pocket mode: black screen, touches locked, voice keeps coaching -->
+<div id="pocket">
+  <div class="pk-mid"><div id="pkTime">0:00</div><div id="pkGap"></div></div>
+  <div class="pk-foot">
+    <svg id="pkRing" width="76" height="76" viewBox="0 0 76 76"><circle cx="38" cy="38" r="34" fill="none" stroke="#1d1d1d" stroke-width="4"/><circle id="pkArc" cx="38" cy="38" r="34" fill="none" stroke="#3ddc84" stroke-width="4" stroke-linecap="round" stroke-dasharray="213.6" stroke-dashoffset="213.6" transform="rotate(-90 38 38)"/></svg>
+    <div class="pk-hint">Press and hold anywhere to unlock</div>
+  </div>
+</div>
 
 <script src="app.js"></script>
 </body>
