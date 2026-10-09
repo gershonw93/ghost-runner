@@ -689,6 +689,7 @@ function buildHome() {
   $('distPlus').onclick = () => { S.goalDist = Math.min(100000, S.goalDist + unitM() * 0.1); save(); refresh(); };
   $('switchBtn').onclick = () => { S.byPace = !S.byPace; save(); refresh(); };
   $('tMinus').onclick = () => nudge(-1); $('tPlus').onclick = () => nudge(1);
+  $('targetTap').onclick = openTypeIn;
   holdRepeat($('distMinus')); holdRepeat($('distPlus')); holdRepeat($('tMinus')); holdRepeat($('tPlus'));
   $('startBtn').onclick = startRun;
   $('setBtn').onclick = openSettings;
@@ -724,6 +725,57 @@ function refresh() {
     $('derived').textContent = `${Fmt.pace(S.goalTime / S.goalDist, S.miles)} per ${u}`; $('switchBtn').textContent = 'Set pace instead';
   }
 }
+
+/* ---------- Type in a pace or finish time ---------- */
+function openTypeIn() {
+  const sh = $('typeSheet'), box = $('typeFields'), u = S.miles ? 'mile' : 'km';
+  const field = (id, val, lab, max) => `<div><input id="${id}" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" value="${val}" data-max="${max}" autocomplete="off"><span class="lab">${lab}</span></div>`;
+  const colon = '<span class="colon">:</span>';
+  let read;
+  if (S.byPace) {
+    const p = Math.round(paceSec());
+    $('typeT').textContent = 'Type your pace';
+    $('typeM').textContent = `Minutes and seconds per ${u}.`;
+    box.innerHTML = field('fM', Math.floor(p / 60), 'MIN', 59) + colon + field('fS', String(p % 60).padStart(2, '0'), 'SEC', 59) + `<span class="unit">/${S.miles ? 'mi' : 'km'}</span>`;
+    read = () => {
+      const sec = num('fM') * 60 + num('fS');
+      if (sec < 120 || sec > 1800) return `Pace must be between 2:00 and 30:00 per ${u}.`;
+      S.goalTime = (sec / unitM()) * S.goalDist;
+    };
+  } else {
+    const t = Math.round(S.goalTime);
+    $('typeT').textContent = 'Type your finish time';
+    $('typeM').textContent = `How long you want to take for ${Fmt.distName(S.goalDist, S.miles)}.`;
+    box.innerHTML = field('fH', Math.floor(t / 3600), 'HR', 99) + colon + field('fM', String(Math.floor((t % 3600) / 60)).padStart(2, '0'), 'MIN', 59) + colon + field('fS', String(t % 60).padStart(2, '0'), 'SEC', 59);
+    read = () => {
+      const sec = num('fH') * 3600 + num('fM') * 60 + num('fS');
+      if (sec < 60) return 'Finish time must be at least 1 minute.';
+      const p = (sec / S.goalDist) * unitM();
+      if (p < 120 || p > 1800) return `That works out to ${Fmt.clock(p)} per ${u}. Pick a time between 2:00 and 30:00 per ${u}.`;
+      S.goalTime = sec;
+    };
+  }
+  const inputs = [...box.querySelectorAll('input')];
+  inputs.forEach((el, i) => {
+    el.addEventListener('focus', () => setTimeout(() => el.select(), 0));
+    el.addEventListener('input', () => {
+      el.value = el.value.replace(/\D/g, '').slice(0, 2);
+      if (+el.value > +el.dataset.max) el.value = el.dataset.max;
+      $('typeErr').textContent = '';
+      if (el.value.length === 2 && inputs[i + 1]) inputs[i + 1].focus();
+    });
+    el.addEventListener('keydown', (e) => { if (e.key === 'Enter') $('typeYes').onclick(); });
+  });
+  $('typeErr').textContent = '';
+  const close = () => { document.activeElement && document.activeElement.blur(); sh.classList.remove('on'); };
+  $('typeNo').onclick = close;
+  $('typeYes').onclick = () => { const err = read(); if (err) { $('typeErr').textContent = err; return; } save(); refresh(); close(); };
+  sh.onclick = (e) => { if (e.target === sh) close(); };
+  sh.classList.add('on');
+  const first = S.byPace ? inputs[0] : inputs[0];
+  first.focus();
+}
+const num = (id) => parseInt($(id).value, 10) || 0;
 
 /* ---------- Settings / confirm sheets ---------- */
 function openSettings() {

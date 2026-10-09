@@ -125,6 +125,15 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .sheet .btn{margin-top:14px;height:50px}
 .sheet .two{display:flex;gap:10px;margin-top:16px}
 .sheet .two .btn{margin-top:0}
+.typeit{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--acc);opacity:.75;letter-spacing:.02em;margin:2px 0 4px}
+.fields{display:flex;align-items:center;justify-content:center;gap:6px;margin:18px 0 4px}
+.fields input{width:76px;height:64px;border:1.5px solid var(--line);border-radius:14px;text-align:center;font:700 34px -apple-system,sans-serif;color:var(--txt);background:var(--bg);font-variant-numeric:tabular-nums;-webkit-user-select:text;user-select:text}
+.fields input:focus{outline:none;border-color:var(--acc);background:#fff}
+.fields .colon{font-size:32px;font-weight:700;color:var(--sub)}
+.fields .lab{display:block;font-size:11px;font-weight:600;color:var(--sub);text-align:center;margin-top:4px;letter-spacing:.06em}
+.fields .unit{font-size:16px;font-weight:600;color:var(--sub);margin-left:6px}
+#typeSheet{align-items:flex-start;padding-top:calc(24px + var(--sat))}
+.err{color:#d94848;font-size:13px;text-align:center;min-height:18px;margin-top:6px}
 .install{font-size:13px;color:var(--sub);text-align:center;margin-top:12px;line-height:1.4}
 </style>
 </head>
@@ -147,7 +156,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
     <div class="row2"><div class="h2" id="targetLbl"></div><button class="link" id="switchBtn"></button></div>
     <div class="card stepper" style="margin-top:0">
       <button class="rb press" id="tMinus" aria-label="Less"><svg width="22" height="22" viewBox="0 0 24 24" stroke="#1a2230" stroke-width="2.6" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
-      <div class="mid"><div class="big" id="targetBig" style="color:var(--acc)"></div><div class="sub" id="derived" style="font-size:14px"></div></div>
+      <button class="mid press" id="targetTap" aria-label="Type it in"><div class="big" id="targetBig" style="color:var(--acc)"></div><div class="sub" id="derived" style="font-size:14px"></div><div class="typeit"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>tap to type</div></button>
       <button class="rb press" id="tPlus" aria-label="More"><svg width="22" height="22" viewBox="0 0 24 24" stroke="#1a2230" stroke-width="2.6" stroke-linecap="round"><path d="M5 12h14M12 5v14"/></svg></button>
     </div>
     <div class="install" id="installTip"></div>
@@ -206,6 +215,14 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   <button class="tog" id="togMiles">Use miles<span class="sw"></span></button>
   <button class="tog" id="togVoice">Voice call-outs<span class="sw"></span></button>
   <button class="btn press" id="setDone">Done</button>
+</div></div>
+
+<!-- Type-in sheet -->
+<div class="dim" id="typeSheet"><div class="sheet">
+  <h3 id="typeT"></h3><p id="typeM"></p>
+  <div class="fields" id="typeFields"></div>
+  <div class="err" id="typeErr"></div>
+  <div class="two"><button class="btn line press" id="typeNo">Cancel</button><button class="btn press" id="typeYes">Set</button></div>
 </div></div>
 
 <!-- Confirm sheet -->
