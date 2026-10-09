@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Ghost Runner</title>
+<meta name="description" content="Your pacer. Always out front.">
+<meta name="theme-color" content="#f5f7fb">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Ghost Runner">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+:root{
+  --bg:#f5f7fb; --acc:#2f7bf6; --acc-soft:#e8f0fe; --amber:#f0a020; --chip:#edf1f7;
+  --green:#1fa463; --line:#e3e8f0; --sub:#6a7587; --txt:#1a2230; --card:#fff;
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--txt);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Roboto,sans-serif;
+  overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.view{position:fixed;inset:0;display:none;flex-direction:column}
+.view.on{display:flex}
+.b{font-weight:600}
+.sub{color:var(--sub)}
+.press{transition:transform .08s ease,opacity .08s}
+.press:active{transform:scale(.97);opacity:.85}
+
+/* ---------- Home ---------- */
+#home{background:linear-gradient(#e6effd,var(--bg) 45%,var(--bg))}
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(28px + var(--sat)) 22px 16px}
+.brand{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+.logo{width:52px;height:52px;border-radius:18px;background:var(--acc);display:grid;place-items:center;flex:none}
+.brand h1{font-size:19px;font-weight:700}
+.brand p{font-size:12px;color:var(--sub);margin-top:2px}
+.h2{font-size:22px;font-weight:700;margin:0 0 12px 2px}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -22px;padding:0 22px 2px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;padding:8px 14px;border-radius:22px;background:#fff;border:1px solid var(--line);font-size:14px;font-weight:600}
+.chip.sel{background:var(--acc);border-color:var(--acc);color:#fff}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:10px 16px;box-shadow:0 1px 2px rgba(20,30,50,.05)}
+.stepper{display:flex;align-items:center;margin-top:14px}
+.stepper .mid{flex:1;text-align:center}
+.big{font-size:40px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+.rb{width:48px;height:48px;border-radius:28px;background:var(--chip);display:grid;place-items:center;flex:none}
+.row2{display:flex;align-items:center;margin:22px 0 10px 2px}
+.row2 .h2{flex:1;margin:0}
+.link{color:var(--acc);font-size:14px;font-weight:600;padding:8px 0 8px 8px}
+.foot{padding:8px 22px calc(10px + var(--sab))}
+.btn{height:56px;width:100%;border-radius:16px;background:var(--acc);color:#fff;font-size:16px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn.soft{background:var(--acc-soft);color:var(--acc);height:46px}
+.btn.line{background:#fff;color:var(--acc);border:1px solid var(--line);height:46px}
+.btn[disabled]{opacity:.4;pointer-events:none}
+.links{display:flex;justify-content:center;gap:28px;padding-top:10px}
+.links button{font-size:13px;font-weight:600;color:var(--sub);padding:2px 4px}
+
+/* ---------- Run ---------- */
+#run{background:#1c2330;color:#fff}
+#cam,#gl,#ov{position:absolute;inset:0;width:100%;height:100%}
+#cam{object-fit:cover}
+.shade-t{position:absolute;left:0;right:0;top:0;height:230px;background:linear-gradient(rgba(13,20,32,.67),rgba(13,20,32,0));pointer-events:none}
+.shade-b{position:absolute;left:0;right:0;bottom:0;height:220px;background:linear-gradient(0deg,rgba(13,20,32,.6),rgba(13,20,32,0));pointer-events:none}
+.hud{position:absolute;left:0;right:0;top:0;padding:calc(30px + var(--sat)) 16px 0;display:flex;flex-direction:column;align-items:center;pointer-events:none}
+#timeV{font-size:40px;font-weight:700;text-shadow:0 2px 8px rgba(0,0,0,.4);font-variant-numeric:tabular-nums}
+.stats{display:none;width:100%;gap:8px;margin-top:10px}
+.stat{flex:1;background:rgba(16,24,38,.4);border-radius:16px;padding:8px;text-align:center}
+.stat .v{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
+.stat .l{font-size:10px;font-weight:600;color:#cbd5e4;letter-spacing:.08em;margin-top:2px}
+#gapCard{display:none;margin-top:14px;background:rgba(16,24,38,.7);border-radius:22px;padding:8px 20px 9px;text-align:center}
+#gapV{font-size:18px;font-weight:700;letter-spacing:.04em;white-space:nowrap}
+#lockV{font-size:11px;font-weight:700;letter-spacing:.08em;color:#cbd5e4;margin-top:2px;min-height:13px}
+#posBar{position:absolute;right:0;top:50%;width:90px;height:320px;transform:translateY(-50%);display:none;pointer-events:none}
+.ctrl{position:absolute;left:0;right:0;bottom:calc(36px + var(--sab));display:none;justify-content:center;gap:28px}
+.ctrl button{width:58px;height:58px;border-radius:32px;background:rgba(16,24,38,.7);display:grid;place-items:center;box-shadow:0 4px 10px rgba(0,0,0,.25)}
+.ready{position:absolute;left:12px;right:12px;bottom:calc(16px + var(--sab));background:#fff;color:var(--txt);border-radius:26px;padding:18px 16px 14px}
+.ready h3{font-size:22px;font-weight:700}
+.ready .tip{font-size:14px;color:var(--sub);margin:4px 0 12px}
+.ready .st{font-size:15px;font-weight:600;color:var(--sub);margin-top:8px;line-height:1.3}
+.ready .st:first-of-type{margin-top:0}
+.ready .btn{margin-top:12px}
+.ready .btn.line{margin-top:8px}
+.ok{color:var(--green)!important}.wait{color:var(--amber)!important}
+
+/* ---------- Summary / History ---------- */
+#summary,#history{background:var(--bg)}
+.sum{flex:1;overflow-y:auto;padding:calc(64px + var(--sat)) 24px 20px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.sum .t{font-size:30px;font-weight:700}
+.sum .clock{font-size:72px;font-weight:700;color:var(--acc);margin-top:20px;font-variant-numeric:tabular-nums;letter-spacing:-1px}
+.sum .d{font-size:18px;color:var(--sub);margin-top:6px}
+.sum .res{font-size:20px;font-weight:700;margin-top:24px}
+.srow{display:flex;gap:8px;width:100%;margin-top:26px}
+.srow .card{flex:1;padding:14px 6px;text-align:center}
+.srow .v{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
+.srow .l{font-size:10px;font-weight:600;color:var(--sub);letter-spacing:.06em;margin-top:4px}
+.splits{width:100%;margin-top:14px;text-align:left;padding:6px 16px}
+.splits .hd{font-size:12px;font-weight:600;color:var(--sub);letter-spacing:.08em;padding:8px 0 4px}
+.sp{display:flex;justify-content:space-between;padding:9px 0;border-top:1px solid var(--line);font-size:15px;font-variant-numeric:tabular-nums}
+.sp:first-of-type{border-top:0}
+.hdr{display:flex;align-items:center;gap:14px;padding:calc(20px + var(--sat)) 20px 8px 12px}
+.hdr .rb{background:#fff;border:1px solid var(--line);width:44px;height:44px}
+.hdr h2{font-size:24px;font-weight:700}
+.list{flex:1;overflow-y:auto;padding:8px 20px calc(20px + var(--sab))}
+.run{display:flex;align-items:center;margin-bottom:10px;padding:12px 16px;text-align:left;width:100%}
+.run .l1{font-size:17px;font-weight:600}
+.run .l2{font-size:12px;color:var(--sub);margin-top:4px}
+.run .r{text-align:right;margin-left:auto;padding-left:10px}
+.run .rt{font-size:20px;font-weight:700;color:var(--acc);font-variant-numeric:tabular-nums}
+.pr{display:inline-block;background:var(--green);color:#fff;font-size:11px;font-weight:700;border-radius:10px;padding:2px 8px;margin-top:4px}
+
+/* ---------- Sheets ---------- */
+.dim{position:fixed;inset:0;background:rgba(10,15,25,.45);display:none;align-items:flex-end;justify-content:center;z-index:20;padding:12px 12px calc(12px + var(--sab))}
+.dim.on{display:flex}
+.sheet{background:#fff;width:100%;max-width:480px;border-radius:24px;padding:20px 18px 14px;color:var(--txt)}
+.sheet h3{font-size:20px;font-weight:700}
+.sheet p{font-size:15px;color:var(--sub);margin-top:6px;line-height:1.4}
+.tog{display:flex;align-items:center;justify-content:space-between;padding:14px 2px;border-bottom:1px solid var(--line);font-size:16px;font-weight:500;width:100%}
+.sw{width:50px;height:30px;border-radius:15px;background:#d5dbe5;position:relative;transition:background .15s;flex:none}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:12px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .15s}
+.sw.on{background:var(--green)}.sw.on::after{left:23px}
+.sheet .btn{margin-top:14px;height:50px}
+.sheet .two{display:flex;gap:10px;margin-top:16px}
+.sheet .two .btn{margin-top:0}
+.install{font-size:13px;color:var(--sub);text-align:center;margin-top:12px;line-height:1.4}
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<section id="home" class="view on">
+  <div class="scroll">
+    <div class="brand">
+      <div class="logo"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="14.5" cy="6.2" r="2.1" fill="#fff" stroke="none"/><path d="M14 9.5 11.5 14.5 15.5 17 14.5 21M11.5 14.5 8 17.5M14 10 18 12M14 10 10.5 11.5"/></svg></div>
+      <div><h1>Ghost Runner</h1><p>Your pacer. Always out front.</p></div>
+    </div>
+    <div class="h2">How far?</div>
+    <div class="chips" id="chips"></div>
+    <div class="card stepper">
+      <button class="rb press" id="distMinus" aria-label="Shorter"><svg width="22" height="22" viewBox="0 0 24 24" stroke="#1a2230" stroke-width="2.6" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
+      <div class="mid"><div class="big" id="distBig"></div><div class="sub" id="distUnit" style="font-size:14px"></div></div>
+      <button class="rb press" id="distPlus" aria-label="Longer"><svg width="22" height="22" viewBox="0 0 24 24" stroke="#1a2230" stroke-width="2.6" stroke-linecap="round"><path d="M5 12h14M12 5v14"/></svg></button>
+    </div>
+    <div class="row2"><div class="h2" id="targetLbl"></div><button class="link" id="switchBtn"></button></div>
+    <div class="card stepper" style="margin-top:0">
+      <button class="rb press" id="tMinus" aria-label="Less"><svg width="22" height="22" viewBox="0 0 24 24" stroke="#1a2230" stroke-width="2.6" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
+      <div class="mid"><div class="big" id="targetBig" style="color:var(--acc)"></div><div class="sub" id="derived" style="font-size:14px"></div></div>
+      <button class="rb press" id="tPlus" aria-label="More"><svg width="22" height="22" viewBox="0 0 24 24" stroke="#1a2230" stroke-width="2.6" stroke-linecap="round"><path d="M5 12h14M12 5v14"/></svg></button>
+    </div>
+    <div class="install" id="installTip"></div>
+  </div>
+  <div class="foot">
+    <button class="btn press" id="startBtn">Start</button>
+    <div class="links"><button id="histBtn">History</button><button id="setBtn">Settings</button></div>
+  </div>
+</section>
+
+<!-- RUN -->
+<section id="run" class="view">
+  <video id="cam" playsinline muted autoplay></video>
+  <canvas id="gl"></canvas>
+  <canvas id="ov"></canvas>
+  <div class="shade-t"></div><div class="shade-b"></div>
+  <canvas id="posBar"></canvas>
+  <div class="hud">
+    <div id="timeV">0:00</div>
+    <div class="stats" id="stats">
+      <div class="stat"><div class="v" id="distV">--</div><div class="l" id="distL">MILES</div></div>
+      <div class="stat"><div class="v" id="paceV">--</div><div class="l" id="paceL">PACE /MI</div></div>
+      <div class="stat"><div class="v" id="lapV">--</div><div class="l">TO CALL-OUT</div></div>
+    </div>
+    <div id="gapCard"><div id="gapV"></div><div id="lockV"></div></div>
+  </div>
+  <div class="ctrl" id="ctrl">
+    <button id="pauseBtn" class="press" aria-label="Pause"></button>
+    <button id="stopBtn" class="press" aria-label="End run"><svg width="26" height="26" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2.5" fill="#ff6b6b"/></svg></button>
+  </div>
+  <div class="ready" id="readyCard">
+    <h3>Get ready</h3>
+    <div class="tip">Hold your phone up, camera facing the path ahead.</div>
+    <div class="st" id="gpsRow"></div>
+    <div class="st" id="camRow"></div>
+    <button class="btn press" id="goBtn" disabled>Start</button>
+    <button class="btn line press" id="cancelBtn">Cancel</button>
+  </div>
+</section>
+
+<!-- SUMMARY -->
+<section id="summary" class="view">
+  <div class="sum" id="sumBody"></div>
+  <div class="foot"><button class="btn press" id="doneBtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17.5 19 7"/></svg>Done</button></div>
+</section>
+
+<!-- HISTORY -->
+<section id="history" class="view">
+  <div class="hdr"><button class="rb press" id="backBtn" aria-label="Back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a2230" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"/></svg></button><h2>History</h2></div>
+  <div class="list" id="histList"></div>
+</section>
+
+<!-- Settings sheet -->
+<div class="dim" id="setSheet"><div class="sheet">
+  <h3>Settings</h3>
+  <button class="tog" id="togMiles">Use miles<span class="sw"></span></button>
+  <button class="tog" id="togVoice">Voice call-outs<span class="sw"></span></button>
+  <button class="btn press" id="setDone">Done</button>
+</div></div>
+
+<!-- Confirm sheet -->
+<div class="dim" id="askSheet"><div class="sheet">
+  <h3 id="askT"></h3><p id="askM"></p>
+  <div class="two"><button class="btn line press" id="askNo"></button><button class="btn press" id="askYes"></button></div>
+</div></div>
+
+<script src="app.js"></script>
+</body>
+</html>
