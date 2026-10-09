@@ -249,7 +249,7 @@ class RunEngine {
 /* Coach voices: each one has its own lines and its own way of speaking */
 const VOICES = {
   standard: {
-    name: 'Standard', desc: 'Plain and clear', rate: 1, pitch: 1, lang: 'en-US', pick: ['Samantha', 'Alex', 'Google US English'],
+    name: 'Standard', desc: 'Plain and clear', rate: 1, pitch: 1, lang: 'en-US', pick: ['Ava', 'Zoe', 'Evan', 'Samantha', 'Allison', 'Google US English'],
     start: () => 'Go. Ghost is running.',
     youPass: () => 'You passed the ghost.',
     ghostPass: () => 'The ghost passed you.',
@@ -262,7 +262,7 @@ const VOICES = {
     pocket: () => 'Pocket mode. Press and hold the screen to unlock.',
   },
   yeshivish: {
-    name: 'Yeshivish guy yelling', desc: 'Loud, fast, full of chizuk', rate: 1.22, pitch: 1.35, lang: 'en-US', pick: ['Fred', 'Aaron', 'Tom', 'Alex', 'Google US English'],
+    name: 'Yeshivish guy yelling', desc: 'Loud, fast, full of chizuk', rate: 1.12, pitch: 1.08, lang: 'en-US', pick: ['Evan', 'Nathan', 'Tom', 'Aaron', 'Alex', 'Google US English'],
     start: () => 'NU! LET\'S GO! The ghost is already running, MAMASH!',
     youPass: () => 'YOU PASSED THE GHOST! SHKOYACH! Ashreichem!',
     ghostPass: () => 'OY! The ghost passed you! What are you, sleeping?! GO!',
@@ -277,7 +277,7 @@ const VOICES = {
     yell: true,
   },
   classy: {
-    name: 'Classy', desc: 'Calm, polished, refined', rate: 0.9, pitch: 0.95, lang: 'en-US', pick: ['Samantha', 'Allison', 'Ava', 'Susan', 'Google US English'],
+    name: 'Classy', desc: 'Calm, polished, refined', rate: 0.92, pitch: 1, lang: 'en-US', pick: ['Zoe', 'Ava', 'Allison', 'Susan', 'Samantha', 'Google US English'],
     start: () => 'Splendid. Your ghost is under way. Do enjoy the run.',
     youPass: () => 'Very elegant. You have overtaken the ghost.',
     ghostPass: () => 'Pardon me. The ghost has slipped ahead of you.',
@@ -290,7 +290,7 @@ const VOICES = {
     pocket: () => 'Pocket mode. Hold the screen, when you are ready, to unlock.',
   },
   british: {
-    name: 'British', desc: 'Proper English coach', rate: 1.02, pitch: 1, lang: 'en-GB', pick: ['Daniel', 'Arthur', 'Oliver', 'Kate', 'Serena', 'Google UK English Male', 'Google UK English Female'],
+    name: 'British', desc: 'Proper English coach', rate: 1.02, pitch: 1, lang: 'en-GB', pick: ['Jamie', 'Serena', 'Daniel', 'Arthur', 'Kate', 'Oliver', 'Stephanie', 'Google UK English Male', 'Google UK English Female'],
     start: () => 'Right then, off you go! Ghost is away.',
     youPass: () => "Brilliant! You've passed the ghost.",
     ghostPass: () => "Blimey, the ghost's gone past you.",
@@ -303,7 +303,7 @@ const VOICES = {
     pocket: () => 'Pocket mode. Give the screen a long press to unlock.',
   },
   chasidish: {
-    name: 'Chasidish with a clogged nose', desc: 'Heimish, a bit stuffy', rate: 0.94, pitch: 0.82, lang: 'en-US', pick: ['Fred', 'Tom', 'Alex', 'Aaron', 'Google US English'],
+    name: 'Chasidish with a clogged nose', desc: 'Heimish, a bit stuffy', rate: 0.95, pitch: 0.94, lang: 'en-US', pick: ['Nathan', 'Evan', 'Tom', 'Aaron', 'Alex', 'Google US English'],
     start: () => 'Nu, gey shoin! The ghost is running.',
     youPass: () => 'You passed the ghost. A michaye!',
     ghostPass: () => 'Oy vey, the ghost passed you.',
@@ -323,11 +323,23 @@ const voice = () => VOICES[S.voiceStyle] || VOICES.standard;
 let voiceList = [];
 function loadVoices() { try { voiceList = speechSynthesis.getVoices() || []; } catch (e) { voiceList = []; } }
 if ('speechSynthesis' in window) { loadVoices(); try { speechSynthesis.onvoiceschanged = loadVoices; } catch (e) {} }
+// Apple's novelty and old robotic voices, never use these
+const ROBOTS = /^(Fred|Albert|Bad News|Bahh|Bells|Boing|Bubbles|Cellos|Good News|Jester|Organ|Superstar|Trinoids|Whisper|Wobble|Zarvox|Junior|Ralph|Kathy|Grandma|Grandpa|Eddy|Flo|Reed|Rocko|Sandy|Shelley)\b/i;
+const quality = (x) => (/premium/i.test(x.name + x.voiceURI) ? 2 : /enhanced|neural|natural/i.test(x.name + x.voiceURI) ? 1 : 0);
+const voiceCache = {};
 function pickVoice(v) {
   if (!voiceList.length) loadVoices();
-  const base = v.lang.slice(0, 2);
-  for (const n of v.pick) { const f = voiceList.find((x) => x.name.startsWith(n) && x.lang.replace('_', '-').startsWith(base)); if (f) return f; }
-  return voiceList.find((x) => x.lang.replace('_', '-') === v.lang) || voiceList.find((x) => x.lang.startsWith(base)) || null;
+  const key = v.name + voiceList.length; if (key in voiceCache) return voiceCache[key];
+  const base = v.lang.slice(0, 2), norm = (l) => (l || '').replace('_', '-');
+  let best = null, bestScore = -1e9;
+  for (const x of voiceList) {
+    const lang = norm(x.lang);
+    if (!lang.startsWith(base) || ROBOTS.test(x.name)) continue;
+    const rank = v.pick.findIndex((n) => x.name.startsWith(n));
+    const score = quality(x) * 40 + (rank >= 0 ? 60 - rank * 5 : 0) + (lang === v.lang ? 15 : 0) + (x.localService === false ? -5 : 0);
+    if (score > bestScore) { best = x; bestScore = score; }
+  }
+  return (voiceCache[key] = best);
 }
 
 const Speaker = {
@@ -872,6 +884,15 @@ function openTypeIn() {
 }
 const num = (id) => parseInt($(id).value, 10) || 0;
 
+function voiceNote() {
+  const el = $('voiceNote'); if (!el) return;
+  const vo = pickVoice(voice()), q = vo ? quality(vo) : 0, ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  let h = vo ? `Using <b>${vo.name.replace(/[<>&]/g, '')}</b> voice. ` : '';
+  if (q < 2 && ios) h += `Sounds robotic? Download a Premium voice: <b>Settings &gt; Accessibility &gt; Read &amp; Speak &gt; Voices &gt; English</b>, then download <b>Ava (Premium)</b> or <b>Zoe (Premium)</b>, <b>Nathan</b> or <b>Evan</b> for the Yeshivish and Chasidish guys, and <b>Jamie (Premium)</b> under English (UK) for British. Then reopen this app.`;
+  else if (q < 2) h += 'For a more natural sound, install a higher quality English voice in your phone\'s text-to-speech settings.';
+  el.innerHTML = h;
+}
+
 /* ---------- Settings / confirm sheets ---------- */
 function openSettings() {
   const sh = $('setSheet'), m = $('togMiles'), v = $('togVoice');
@@ -887,10 +908,11 @@ function openSettings() {
     b.onclick = () => {
       S.voiceStyle = id; [...list.children].forEach((c) => c.classList.toggle('sel', c === b));
       unlockAudio(); try { speechSynthesis.cancel(); } catch (e) {}
-      Speaker.say(v.speedUp('8 seconds'), true);
+      Speaker.say(v.speedUp('8 seconds'), true); voiceNote();
     };
     list.appendChild(b);
   });
+  voiceNote();
   $('setDone').onclick = () => { sh.classList.remove('on'); save(); refresh(); };
   sh.onclick = (e) => { if (e.target === sh) $('setDone').onclick(); };
   paint(); sh.classList.add('on');
